@@ -14,13 +14,13 @@ option(
     OFF
 )
 option(
-    SMTPLIB_EXAMPLES_USE_BOOST_ASIO
-    "build examples with Boost.Asio instead of standalone Asio"
+    SMTPLIB_USE_BOOST_ASIO
+    "build with Boost.Asio instead of standalone Asio"
     OFF
 )
 option(
-    SMTPLIB_EXAMPLES_USE_FMT_FORMAT
-    "build examples with `fmt::format` instead of `std::format`"
+    SMTPLIB_USE_FMT_FORMAT
+    "build with `fmt::format` instead of `std::format`"
     OFF
 )
 
@@ -35,6 +35,48 @@ target_include_directories(
     INTERFACE
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:${PROJECT_NAME}/include>
+)
+
+if (SMTPLIB_USE_BOOST_ASIO)
+    find_package(Boost "1.87" REQUIRED COMPONENTS asio)
+    target_link_libraries(
+        ${PROJECT_NAME}
+        INTERFACE
+        Boost::asio
+    )
+    target_compile_definitions(
+        ${PROJECT_NAME}
+        INTERFACE
+        -DSMTPLIB_USE_BOOST_ASIO
+    )
+else()
+    find_package(asio "1.28" REQUIRED)
+    target_link_libraries(
+        ${PROJECT_NAME}
+        INTERFACE
+        asio::asio
+    )
+endif()
+
+if (SMTPLIB_USE_FMT_FORMAT)
+    find_package(fmt "10.1" REQUIRED)
+    target_link_libraries(
+        ${PROJECT_NAME}
+        INTERFACE
+        fmt::fmt-header-only
+    )
+    target_compile_definitions(
+        ${PROJECT_NAME}
+        INTERFACE
+        -DSMTPLIB_USE_FMT_FORMAT
+    )
+endif()
+
+find_package(OpenSSL "0.9.8" REQUIRED)
+target_link_libraries(
+    ${PROJECT_NAME}
+    INTERFACE
+    OpenSSL::SSL
 )
 
 install(
@@ -67,50 +109,6 @@ install(
     DESTINATION ${PROJECT_NAME}/lib/cmake/${PROJECT_NAME}
 )
 
-
 if (SMTPLIB_EXAMPLES)
-
-    if (SMTPLIB_EXAMPLES_USE_BOOST_ASIO)
-        find_package(Boost "1.87" REQUIRED COMPONENTS asio)
-        target_link_libraries(
-            ${PROJECT_NAME}
-            INTERFACE
-            Boost::asio
-        )
-        target_compile_definitions(
-            ${PROJECT_NAME}
-            INTERFACE
-            -DSMTPLIB_USE_BOOST_ASIO
-        )
-    else()
-        find_package(asio "1.28" REQUIRED)
-        target_link_libraries(
-            ${PROJECT_NAME}
-            INTERFACE
-            asio::asio
-        )
-    endif()
-
-    if (SMTPLIB_EXAMPLES_USE_FMT_FORMAT)
-        find_package(fmt "10.1" REQUIRED)
-        target_link_libraries(
-            ${PROJECT_NAME}
-            INTERFACE
-            fmt::fmt-header-only
-        )
-        target_compile_definitions(
-            ${PROJECT_NAME}
-            INTERFACE
-            -DSMTPLIB_USE_FMT_FORMAT
-        )
-    endif()
-
-    find_package(OpenSSL "0.9.8" REQUIRED)
-    target_link_libraries(
-        ${PROJECT_NAME}
-        INTERFACE
-        OpenSSL::SSL
-    )
-
     add_subdirectory(examples)
 endif()
